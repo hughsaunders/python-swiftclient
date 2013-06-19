@@ -37,6 +37,7 @@ DEFAULT_COMPUTE_API_VERSION = '2'
 DEFAULT_IDENTITY_API_VERSION = '2.0'
 DEFAULT_IMAGE_API_VERSION = '2'
 DEFAULT_VOLUME_API_VERSION = '1'
+DEFAULT_OBJECT_API_VERSION = '1'
 
 
 def env(*vars, **kwargs):
@@ -170,6 +171,15 @@ class OpenStackShell(app.App):
             help='Volume API version, default=' +
                  DEFAULT_VOLUME_API_VERSION +
                  ' (Env: OS_VOLUME_API_VERSION)')
+        parser.add_argument(
+            '--os-object-api-version',
+            metavar='<object-api-version>',
+            default=env(
+                'OS_OBJECT_API_VERSION',
+                default=DEFAULT_OBJECT_API_VERSION),
+            help='Object API version, default=' +
+                 DEFAULT_OBJECT_API_VERSION +
+                 ' (Env: OS_OBJECT_API_VERSION)')
         parser.add_argument(
             '--os-token',
             metavar='<token>',
@@ -310,6 +320,7 @@ class OpenStackShell(app.App):
             'identity': self.options.os_identity_api_version,
             'image': self.options.os_image_api_version,
             'volume': self.options.os_volume_api_version,
+            'object': self.options.os_object_api_version,
         }
 
         # Add the API version-specific commands
