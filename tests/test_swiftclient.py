@@ -14,6 +14,7 @@
 # limitations under the License.
 
 # TODO: More tests
+import Queue
 import socket
 import StringIO
 import testtools
@@ -890,6 +891,31 @@ class TestThreadManager(testtools.TestCase):
         self.assertEqual(3, tm.queues['print'].qsize())
         self.assertTrue(all([tm.queues['print'].get() == 'test'
                             for q in range(tm.queues['print'].qsize())]))
+
+    def test_queue_growth(self):
+        inputs = range(500)
+        tm = u.ThreadManager(inputs, lambda x, y: x)
+        tm.start()
+        for i in range(250):
+            tm.queues['input'].put(
+                u.ThreadManager.QueueItem(priority=100, item=i))
+        tm.join()
+        self.assertEqual(0, tm.queues['input'].qsize())
+        self.assertTrue(tm.queues['output'].qsize() > len(inputs))
+
+    def test_queue_shrink(self):
+        inputs = range(500)
+        tm = u.ThreadManager(inputs, lambda x, y: x)
+        tm.start()
+        while not tm.queues['input'].empty():
+            try:
+                tm.queues['input'].get_nowait()
+                tm.queues['input'].task_done()
+            except Queue.Empty:
+                break
+        tm.join()
+        self.assertEqual(0, tm.queues['input'].qsize())
+        self.assertTrue(tm.queues['output'].qsize() < len(inputs))
 
 
 if __name__ == '__main__':

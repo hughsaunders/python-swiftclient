@@ -154,6 +154,7 @@ class ThreadManager(object):
                     pass
             jfe = ThreadManager.JobFailureException()
             jfe.errors = self.errors
+            jfe.threadmanager = self
             raise jfe
 
     def kill(self, blocking=False):
