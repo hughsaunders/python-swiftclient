@@ -825,20 +825,24 @@ class TestThreadManager(testtools.TestCase):
         tm = u.ThreadManager(inputs, lambda x, y: x)
         tm.start()
         tm.join()
+        self.assertEqual(0, tm.queues['error'].qsize())
         self.assertEqual(len(inputs), tm.queues['output'].qsize())
         self.assertEqual(inputs,
                          [tm.queues['output'].get()
                          for i in range(tm.queues['output'].qsize())])
+        self.assertEqual(0, tm.queues['print'].qsize())
 
     def test_nones_not_in_output_queue(self):
         inputs = [1, 2, 3]
         tm = u.ThreadManager(inputs, lambda x, y: x if x > 1 else None)
         tm.start()
         tm.join()
+        self.assertEqual(0, tm.queues['error'].qsize())
         self.assertEqual(2, tm.queues['output'].qsize())
         self.assertEqual([2, 3],
                          [tm.queues['output'].get()
                          for i in range(tm.queues['output'].qsize())])
+        self.assertEqual(0, tm.queues['print'].qsize())
 
     def test_exceptions_captured(self):
         inputs = [1, 2, 3, 4, 5]
@@ -850,10 +854,12 @@ class TestThreadManager(testtools.TestCase):
         self.assertEqual(2, tm.queues['output'].qsize())
         self.assertEqual(0, tm.queues['error'].qsize())
         self.assertEqual(3, len(tm.errors))
-        self.assertEqual(ZeroDivisionError, tm.errors[0][1].__class__)
+        self.assertTrue(all([e[1].__class__ == ZeroDivisionError
+                            for e in tm.errors]))
         self.assertEqual([1, 2],
                          [tm.queues['output'].get()
                          for i in range(tm.queues['output'].qsize())])
+        self.assertEqual(0, tm.queues['print'].qsize())
 
     def test_kill_threads(self):
         inputs = range(10000)
@@ -864,11 +870,27 @@ class TestThreadManager(testtools.TestCase):
         self.assertTrue(tm.queues['input'].qsize() < len(inputs))
         self.assertTrue(tm.queues['input'].qsize() > 0)
         self.assertEqual(tm.queues['output'].qsize(), 0)
+        self.assertEqual(0, tm.queues['error'].qsize())
+        self.assertEqual(0, tm.queues['print'].qsize())
 
     def test_empty_input(self):
         inputs = []
         tm = u.ThreadManager(inputs, lambda x, y: x)
         self.assertEqual(0, tm.queues['output'].qsize())
+        self.assertEqual(0, tm.queues['error'].qsize())
+        self.assertEqual(0, tm.queues['print'].qsize())
+
+    def test_print_queue(self):
+        inputs = [1, 2, 3]
+        tm = u.ThreadManager(inputs, lambda x, y: y.put('test'))
+        tm.start()
+        tm.join()
+        self.assertEqual(0, tm.queues['error'].qsize())
+        self.assertEqual(0, tm.queues['output'].qsize())
+        self.assertEqual(3, tm.queues['print'].qsize())
+        self.assertTrue(all([tm.queues['print'].get() == 'test'
+                            for q in range(tm.queues['print'].qsize())]))
+
 
 if __name__ == '__main__':
     testtools.main()
