@@ -17,6 +17,7 @@
 import socket
 import StringIO
 import testtools
+import time
 import warnings
 from urlparse import urlparse
 
@@ -816,6 +817,58 @@ class TestConnection(MockHttpTest):
         finally:
             c.http_connection = orig_conn
 
+
+class TestThreadManager(testtools.TestCase):
+
+    def test_all_inputs_processed(self):
+        inputs = [1, 2, 3]
+        tm = u.ThreadManager(inputs, lambda x, y: x)
+        tm.start()
+        tm.join()
+        self.assertEqual(len(inputs), tm.queues['output'].qsize())
+        self.assertEqual(inputs,
+                         [tm.queues['output'].get()
+                         for i in range(tm.queues['output'].qsize())])
+
+    def test_nones_not_in_output_queue(self):
+        inputs = [1, 2, 3]
+        tm = u.ThreadManager(inputs, lambda x, y: x if x > 1 else None)
+        tm.start()
+        tm.join()
+        self.assertEqual(2, tm.queues['output'].qsize())
+        self.assertEqual([2, 3],
+                         [tm.queues['output'].get()
+                         for i in range(tm.queues['output'].qsize())])
+
+    def test_exceptions_captured(self):
+        inputs = [1, 2, 3, 4, 5]
+        tm = u.ThreadManager(inputs, lambda x, y: x if x < 3 else 1 / 0)
+        tm.start()
+
+        self.assertRaises(u.ThreadManager.JobFailureException, tm.join)
+
+        self.assertEqual(2, tm.queues['output'].qsize())
+        self.assertEqual(0, tm.queues['error'].qsize())
+        self.assertEqual(3, len(tm.errors))
+        self.assertEqual(ZeroDivisionError, tm.errors[0][1].__class__)
+        self.assertEqual([1, 2],
+                         [tm.queues['output'].get()
+                         for i in range(tm.queues['output'].qsize())])
+
+    def test_kill_threads(self):
+        inputs = range(10000)
+        tm = u.ThreadManager(inputs, lambda x, y: time.sleep(0.01))
+        tm.start()
+        tm.kill(blocking=True)
+        self.assertTrue(all([t.is_alive() is False for t in tm.threads]))
+        self.assertTrue(tm.queues['input'].qsize() < len(inputs))
+        self.assertTrue(tm.queues['input'].qsize() > 0)
+        self.assertEqual(tm.queues['output'].qsize(), 0)
+
+    def test_empty_input(self):
+        inputs = []
+        tm = u.ThreadManager(inputs, lambda x, y: x)
+        self.assertEqual(0, tm.queues['output'].qsize())
 
 if __name__ == '__main__':
     testtools.main()
