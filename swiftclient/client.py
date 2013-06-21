@@ -28,6 +28,9 @@ from urlparse import urlparse, urlunparse
 from httplib import HTTPException, HTTPConnection, HTTPSConnection
 from time import sleep
 
+import swiftclient.container
+import swiftclient.object
+
 try:
     from swiftclient.https_connection import HTTPSConnectionNoSSLComp
 except ImportError:
@@ -1163,3 +1166,14 @@ class Connection(object):
         """Wrapper for :func:`delete_object`"""
         return self._retry(None, delete_object, container, obj,
                            query_string=query_string)
+
+
+
+class Client(object):
+    def __init__(self, *args, **kwargs):
+        self.connection = Connection(args, kwargs)
+
+        self.objects = swiftclient.object.ObjectManager(self)
+        self.containers = swifclient.container.ContainerManager(self)
+
+
