@@ -20,10 +20,12 @@ object interface.
 from swiftclient import base
 
 class SwiftObject(base.Resource):
-    """Object representing a swift object.__class__
-    """
+    """Object representing a swift object.
+
+    Called SwiftObject to avoid shadowing object."""
+
     def __repr__(self):
-        return "<object: %s>" % self.name
+        return "<SwiftObject: %s>" % self.name
 
     def delete(self):
         """Delete this object."""

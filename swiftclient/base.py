@@ -46,7 +46,7 @@ class Manager(object):
         self.client = client
         self.connection = client.connection
 
-    def mangle_header(header):
+    def mangle_header(self, header):
         """Remove x- and replace '-' with '_'."""
         if header.startswith('x-'):
             header = header[2:]
@@ -107,7 +107,7 @@ class Resource(object):
 
         new = self.manager._get(self)
         if new:
-            self._add_details(new._info)
+            self._add_details(new)
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):

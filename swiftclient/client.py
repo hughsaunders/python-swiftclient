@@ -29,7 +29,7 @@ from httplib import HTTPException, HTTPConnection, HTTPSConnection
 from time import sleep
 
 import swiftclient.container
-import swiftclient.object
+import swiftclient.swiftobject
 
 try:
     from swiftclient.https_connection import HTTPSConnectionNoSSLComp
@@ -1171,9 +1171,9 @@ class Connection(object):
 
 class Client(object):
     def __init__(self, *args, **kwargs):
-        self.connection = Connection(args, kwargs)
+        self.connection = Connection(*args, **kwargs)
 
-        self.objects = swiftclient.object.ObjectManager(self)
-        self.containers = swifclient.container.ContainerManager(self)
+        self.objects = swiftclient.swiftobject.SwiftObjectManager(self)
+        self.containers = swiftclient.container.ContainerManager(self)
 
 

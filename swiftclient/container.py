@@ -29,24 +29,22 @@ class Container(base.Resource):
         * bytes: size in bytes
         * objects: dictionary object name: object"""
 
+    def __init__(self, *args, **kwargs):
+        super(Container, self).__init__(*args, **kwargs)
+        self.objects={}
+
     def __repr__(self):
         return "<Container: %s>" % self.name
 
-    def get(self):
-        super().get()
-
-        # NOTE(hughsaunders) The manager class doesn't have a reference
-        # to the container, so add it here.
-        for obj in self.objects:
-            obj.container = self
-
     def delete(self, delete_objects_first=False):
         """Delete this container."""
+        self.maybe_get()
         self.manager.delete(self, delete_objects_first)
 
     def __iter__(self):
         """Behave like a list for iteration.
         returns an iterator over the list of objects in the container"""
+        self.maybe_get()
         return self.objects.values().__iter__()
 
     def __len__(self):
@@ -54,15 +52,17 @@ class Container(base.Resource):
 
     def __getitem__(self,key):
         """Dict-like behaviour for getitem"""
+        self.maybe_get()
         return self.objects[key]
 
     def __delitem__(self,key):
         """Dict-like behaviour for delitem"""
+        self.maybe_get()
         self.objects[key].delete()
-        self._loaded = False
         self.get()
 
     def list(self, prefix_match=None):
+        self.maybe_get()
         if prefix_match:
             return [self.objects[key] for key in self.objects.keys()
                 if key.startswith(prefix_match) ]
