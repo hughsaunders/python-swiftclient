@@ -14,7 +14,6 @@
 # limitations under the License.
 
 # TODO: More tests
-import Queue
 import socket
 import StringIO
 import testtools
@@ -866,7 +865,7 @@ class TestThreadManager(testtools.TestCase):
         self.assertEqual(0, tm.queues['print'].qsize())
 
     def test_kill_threads(self):
-        inputs = range(10000)
+        inputs = range(100000)
         tm = u.ThreadManager(inputs, lambda x, y: time.sleep(0.01))
         tm.start()
         tm.kill(blocking=True)
@@ -893,31 +892,6 @@ class TestThreadManager(testtools.TestCase):
         self.assertEqual(0, tm.queues['output'].qsize())
         self.assertEqual(3, tm.queues['print'].qsize())
         self.assertEqual(len(inputs) * ['test'], tm.get_list('print'))
-
-    def test_queue_growth(self):
-        inputs = range(5000)
-        tm = u.ThreadManager(inputs, lambda x, y: x)
-        tm.start()
-        for i in range(250):
-            tm.queues['input'].put(
-                u.ThreadManager.QueueItem(priority=100, item=i))
-        tm.join()
-        self.assertEqual(0, tm.queues['input'].qsize())
-        self.assertTrue(tm.queues['output'].qsize() > len(inputs))
-
-    def test_queue_shrink(self):
-        inputs = range(500)
-        tm = u.ThreadManager(inputs, lambda x, y: x)
-        tm.start()
-        while not tm.queues['input'].empty():
-            try:
-                tm.queues['input'].get_nowait()
-                tm.queues['input'].task_done()
-            except Queue.Empty:
-                break
-        tm.join()
-        self.assertEqual(0, tm.queues['input'].qsize())
-        self.assertTrue(tm.queues['output'].qsize() < len(inputs))
 
 
 if __name__ == '__main__':
