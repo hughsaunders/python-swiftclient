@@ -142,16 +142,29 @@ class ThreadManager(object):
 
         return self
 
+    def get_list(self, queue_name):
+        """Get an internal queue as a list.
+
+        This destructs the internal queue. Will not contain all items if
+        other threads are also reading the queue.
+        """
+
+        queue = self.queues[queue_name]
+        l = []
+        while not queue.empty():
+            try:
+                l.append(queue.get_nowait())
+            except Queue.Empty:
+                break
+        return l
+
     def join(self):
         """Wait for all inputs to be processed"""
         self.queues['input'].join()
+
+        self.errors = []
         if not self.queues['error'].empty():
-            self.errors = []
-            while not self.queues['error'].empty():
-                try:
-                    self.errors.append(self.queues['error'].get())
-                except Queue.Empty:
-                    pass
+            self.errors = self.get_list('error')
             jfe = ThreadManager.JobFailureException()
             jfe.errors = self.errors
             jfe.threadmanager = self

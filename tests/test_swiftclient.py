@@ -821,6 +821,13 @@ class TestConnection(MockHttpTest):
 
 class TestThreadManager(testtools.TestCase):
 
+    def test_get_list(self):
+        inputs = [1, 2, 3]
+        tm = u.ThreadManager(inputs, lambda x, y: x)
+        tm.start()
+        tm.join()
+        self.assertEqual(inputs, tm.get_list("output"))
+
     def test_all_inputs_processed(self):
         inputs = [1, 2, 3]
         tm = u.ThreadManager(inputs, lambda x, y: x)
@@ -840,9 +847,7 @@ class TestThreadManager(testtools.TestCase):
         tm.join()
         self.assertEqual(0, tm.queues['error'].qsize())
         self.assertEqual(2, tm.queues['output'].qsize())
-        self.assertEqual([2, 3],
-                         [tm.queues['output'].get()
-                         for i in range(tm.queues['output'].qsize())])
+        self.assertEqual([2, 3], tm.get_list('output'))
         self.assertEqual(0, tm.queues['print'].qsize())
 
     def test_exceptions_captured(self):
@@ -857,9 +862,7 @@ class TestThreadManager(testtools.TestCase):
         self.assertEqual(3, len(tm.errors))
         self.assertTrue(all([e[1].__class__ == ZeroDivisionError
                             for e in tm.errors]))
-        self.assertEqual([1, 2],
-                         [tm.queues['output'].get()
-                         for i in range(tm.queues['output'].qsize())])
+        self.assertEqual([1, 2], tm.get_list('output'))
         self.assertEqual(0, tm.queues['print'].qsize())
 
     def test_kill_threads(self):
@@ -889,11 +892,10 @@ class TestThreadManager(testtools.TestCase):
         self.assertEqual(0, tm.queues['error'].qsize())
         self.assertEqual(0, tm.queues['output'].qsize())
         self.assertEqual(3, tm.queues['print'].qsize())
-        self.assertTrue(all([tm.queues['print'].get() == 'test'
-                            for q in range(tm.queues['print'].qsize())]))
+        self.assertEqual(len(inputs) * ['test'], tm.get_list('print'))
 
     def test_queue_growth(self):
-        inputs = range(500)
+        inputs = range(5000)
         tm = u.ThreadManager(inputs, lambda x, y: x)
         tm.start()
         for i in range(250):
